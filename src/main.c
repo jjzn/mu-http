@@ -1,6 +1,61 @@
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#define LISTEN_PORT 8880
+#define LISTEN_BACKLOG 64
+
+#define RECV_BUFFER 1024
+
+const char RESPONSE[] = "HTTP/1.1 200 OK\r\n\r\nHello, world\r\n";
 
 int main(void) {
-	printf("hello world\n");
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) {
+		perror("socket() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	struct sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(LISTEN_PORT);
+	addr.sin_addr.s_addr = INADDR_ANY;
+
+	if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		perror("bind() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	if (listen(sockfd, LISTEN_BACKLOG) < 0) {
+		perror("listen() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("listening on 0.0.0.0:%d\n", LISTEN_PORT);
+
+	char buffer[RECV_BUFFER] = {0};
+
+	while (1) {
+		int conn;
+
+		// We are not interested in the peer address, for now
+		if ((conn = accept(sockfd, NULL, 0)) < 0) {
+			perror("accept() failed");
+			continue;
+		}
+
+		if (recv(conn, buffer, sizeof(buffer), 0) < 0)
+			perror("recv() failed");
+
+		if (send(conn, RESPONSE, sizeof(RESPONSE), 0) < 0)
+			perror("send() failed");
+
+		close(conn);
+	}
+
+	close(sockfd);
+
 	return 0;
 }
