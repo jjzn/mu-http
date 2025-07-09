@@ -20,3 +20,6 @@ clean:
 	rm -r build/* mu-http
 
 remake: clean all
+
+debug: CFLAGS += -g3 -DDEBUG
+debug: remake

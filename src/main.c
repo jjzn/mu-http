@@ -1,6 +1,8 @@
+#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -9,7 +11,27 @@
 
 #define RECV_BUFFER 1024
 
-const char RESPONSE[] = "HTTP/1.1 200 OK\r\n\r\nHello, world\r\n";
+void logprint(char *msg) {
+	time_t now = time(NULL);
+	struct tm *time = localtime(&now);
+
+	char fmt[26]; // yyyy-mm-dd hh:mm:ss +hhmm
+	strftime(fmt, sizeof(fmt) / sizeof(char), "%F %T %z", time);
+
+	printf("[%s] %s\n", fmt, msg);
+}
+
+void send_str(int conn, char *str) {
+	size_t len = strlen(str);
+	send(conn, str, len, 0);
+}
+
+void response_handler(int conn) {
+	char body[] = "hello world\r\n";
+
+	send_str(conn, "HTTP/1.1 200 OK\r\n\r\n");
+	send_str(conn, body);
+}
 
 int main(void) {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,11 +68,12 @@ int main(void) {
 			continue;
 		}
 
+		logprint("connected");
+
 		if (recv(conn, buffer, sizeof(buffer), 0) < 0)
 			perror("recv() failed");
 
-		if (send(conn, RESPONSE, sizeof(RESPONSE), 0) < 0)
-			perror("send() failed");
+		response_handler(conn);
 
 		close(conn);
 	}
