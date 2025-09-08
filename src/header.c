@@ -1,7 +1,7 @@
 #include "header.h"
 #include <string.h>
 
-size_t mu_parse_headers(char *raw, struct mu_header *headers, size_t max) {
+ssize_t mu_parse_headers(char *raw, struct mu_header *headers, size_t max) {
 	char *curr = strtok(raw, "\r\n");
 	size_t idx = 0;
 

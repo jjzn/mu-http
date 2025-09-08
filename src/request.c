@@ -45,7 +45,7 @@ struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t 
 	if (curr == NULL)
 		return err;
 
-	size_t headers_length = mu_parse_headers(curr, headers, max_headers);
+	ssize_t headers_length = mu_parse_headers(curr, headers, max_headers);
 	if (headers_length < 0)
 		return err;
 
