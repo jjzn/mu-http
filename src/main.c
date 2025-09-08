@@ -1,24 +1,33 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "config.h"
 
 #define LISTEN_PORT 8880
 #define LISTEN_BACKLOG 64
 
-void logprint(char *msg) {
+void logprint(char *fmt, ...) {
 	time_t now = time(NULL);
 	struct tm *time = localtime(&now);
+	va_list args;
 
-	char fmt[26]; // yyyy-mm-dd hh:mm:ss +hhmm
-	strftime(fmt, sizeof(fmt) / sizeof(char), "%F %T %z", time);
+	char timefmt[26]; // yyyy-mm-dd hh:mm:ss +hhmm
+	strftime(timefmt, sizeof(timefmt) / sizeof(char), "%F %T %z", time);
 
-	printf("[%s] %s\n", fmt, msg);
+	printf("[%s] ", timefmt);
+
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+
+	putchar('\n');
 }
 
 void send_str(int conn, char *str) {
@@ -55,7 +64,7 @@ int main(void) {
 		exit(EXIT_FAILURE);
 	}
 
-	printf("listening on 0.0.0.0:%d\n", LISTEN_PORT);
+	logprint("listening on 0.0.0.0:%d", LISTEN_PORT);
 
 	char buffer[CLIENT_BUFFER_SIZE] = {0};
 
@@ -69,7 +78,7 @@ int main(void) {
 			continue;
 		}
 
-		logprint("connected");
+		logprint("accepted connection from %s", inet_ntoa(peer_addr.sin_addr));
 
 		if (recv(conn, buffer, sizeof(buffer), 0) < 0)
 			perror("recv() failed");
