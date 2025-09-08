@@ -6,10 +6,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "config.h"
+
 #define LISTEN_PORT 8880
 #define LISTEN_BACKLOG 64
-
-#define RECV_BUFFER 1024
 
 void logprint(char *msg) {
 	time_t now = time(NULL);
@@ -57,13 +57,14 @@ int main(void) {
 
 	printf("listening on 0.0.0.0:%d\n", LISTEN_PORT);
 
-	char buffer[RECV_BUFFER] = {0};
+	char buffer[CLIENT_BUFFER_SIZE] = {0};
 
 	while (1) {
 		int conn;
+		struct sockaddr_in peer_addr;
+		socklen_t peer_addr_len = sizeof(peer_addr);
 
-		// We are not interested in the peer address, for now
-		if ((conn = accept(sockfd, NULL, 0)) < 0) {
+		if ((conn = accept(sockfd, (struct sockaddr *) &peer_addr, &peer_addr_len)) < 0) {
 			perror("accept() failed");
 			continue;
 		}
