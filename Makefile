@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -Werror -std=c99 -Wpedantic
+CFLAGS = -Wall -Wextra -Werror -std=c99 -Wpedantic -D_POSIX_C_SOURCE
 
 TARGET = mu-http
 

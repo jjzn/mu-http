@@ -20,6 +20,15 @@ struct mu_request {
 	struct mu_header *headers;
 };
 
+static const struct mu_request mu_request_err = { .method = HTTP_method_unknown, .version = HTTP_version_unknown, .target = NULL, .headers_length = 0, .headers = 0 };
+
+#define mu_request_is_error(req) ( \
+	(req).method == mu_request_err.method && \
+	(req).version == mu_request_err.version && \
+	(req).target == mu_request_err.target && \
+	(req).headers_length == mu_request_err.headers_length && \
+	(req).headers == mu_request_err.headers)
+
 struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers);
 
 #endif
