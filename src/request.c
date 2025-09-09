@@ -45,22 +45,20 @@ struct mu_request _mu_parse_request_startline(char *startline) {
 
 struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers) {
 	struct mu_request req = mu_request_err;
-	char *lineptr;
 
-	char *line = strtok_r(raw, "\r\n", &lineptr);
-	if (line == NULL)
+	char *lineend = strstr(raw, "\r\n"); // Where the start line ends
+	if (lineend == NULL)
 		return mu_request_err;
 
-	req = _mu_parse_request_startline(line);
+	lineend[0] = '\0';
+	lineend[1] = '\0';
+
+	req = _mu_parse_request_startline(raw);
 	if (mu_request_is_error(req))
 		return mu_request_err;
 	
 	// Parse headers
-	line = strtok_r(NULL, "\r\n", &lineptr);
-	if (line == NULL)
-		return mu_request_err;
-
-	ssize_t headers_length = mu_parse_headers(line, headers, max_headers);
+	ssize_t headers_length = mu_parse_headers(lineend + 2, headers, max_headers);
 	if (headers_length < 0)
 		return mu_request_err;
 
