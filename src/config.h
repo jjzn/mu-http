@@ -8,4 +8,8 @@
 // TODO: adapt for arbitrary methods
 #define CLIENT_BUFFER_SIZE (17 + CLIENT_MAX_HEADERS_LENGTH + CLIENT_MAX_URI_LENGTH)
 
+#define LISTEN_PORT 8880
+#define LISTEN_BACKLOG 64
+
+
 #endif

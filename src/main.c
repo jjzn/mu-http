@@ -10,9 +10,6 @@
 
 #include "config.h"
 
-#define LISTEN_PORT 8880
-#define LISTEN_BACKLOG 64
-
 void logprint(char *fmt, ...) {
 	time_t now = time(NULL);
 	struct tm *time = localtime(&now);
@@ -58,6 +55,8 @@ int main(void) {
 		perror("bind() failed");
 		exit(EXIT_FAILURE);
 	}
+
+	// TODO: setsockopt SO_REUSEADDR or SO_REUSEPORT
 
 	if (listen(sockfd, LISTEN_BACKLOG) < 0) {
 		perror("listen() failed");
