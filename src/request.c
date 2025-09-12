@@ -2,6 +2,11 @@
 #include "header.h"
 #include <string.h>
 
+// Label arrays are initialized here to avoid duplication across translation
+// units, which would happen if they were initialized in the header using static
+char *mu_http_method_labels[] = { MU_HTTP_METHOD(GENERATE_LABELS) };
+char *mu_http_version_labels[] = { MU_HTTP_VERSION(GENERATE_LABELS) };
+
 // Returns a partial mu_request containing no headers
 struct mu_request _mu_parse_request_startline(char *startline) {
 	struct mu_request req = mu_request_err;

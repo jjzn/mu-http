@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 
 #include "config.h"
+#include "request.h"
+#include "header.h"
 
 void logprint(char *fmt, ...) {
 	time_t now = time(NULL);
@@ -82,7 +84,13 @@ int main(void) {
 		if (recv(conn, buffer, sizeof(buffer), 0) < 0)
 			perror("recv() failed");
 
-		response_handler(conn);
+		//response_handler(conn);
+		struct mu_header headers[10];
+		struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
+
+		logprint("request is %s %s %s", mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
+		for (size_t i = 0; i < req.headers_length; i++)
+			logprint("with header %s: %s", req.headers[i].field, req.headers[i].value);
 
 		close(conn);
 	}

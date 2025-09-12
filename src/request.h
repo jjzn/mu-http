@@ -3,13 +3,25 @@
 
 #include <stdlib.h>
 
-enum mu_http_method {
-	HTTP_GET, HTTP_POST, HTTP_method_unknown
-};
+#define GENERATE_ENUM(id, label) id,
+#define GENERATE_LABELS(id, label) label,
 
-enum mu_http_version {
-	HTTP_1_1, HTTP_2, HTTP_3, HTTP_version_unknown
-};
+#define MU_HTTP_METHOD(FN) \
+	FN(HTTP_GET, "GET") \
+	FN(HTTP_POST, "POST") \
+	FN(HTTP_method_unknown, "[unknown method]")
+
+#define MU_HTTP_VERSION(FN) \
+	FN(HTTP_1_1, "HTTP/1.1") \
+	FN(HTTP_2, "HTTP/2") \
+	FN(HTTP_3, "HTTP/3") \
+	FN(HTTP_version_unknown, "[unknown version]")
+
+enum mu_http_method { MU_HTTP_METHOD(GENERATE_ENUM) };
+extern char *mu_http_method_labels[];
+
+enum mu_http_version { MU_HTTP_VERSION(GENERATE_ENUM) };
+extern char *mu_http_version_labels[];
 
 struct mu_request {
 	enum mu_http_method method;
