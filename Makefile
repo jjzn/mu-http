@@ -7,17 +7,19 @@ OBJS = $(patsubst src/%.c,build/%.o,$(SRCS))
 
 .PHONY = all clean remake
 
-all: $(TARGET)
+all: build $(TARGET)
+
+build:
+	mkdir -p build
 
 $(TARGET): $(OBJS)
-	mkdir -p build
 	$(CC) $(LDFLAGS) $^ -o $@
 
 build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm -r build/* mu-http
+	rm -r build mu-http
 
 remake: clean all
 
