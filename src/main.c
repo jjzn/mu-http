@@ -1,9 +1,11 @@
+#include <asm-generic/socket.h>
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,6 +13,8 @@
 #include "config.h"
 #include "request.h"
 #include "header.h"
+
+int sockfd, connfd;
 
 void logprint(char *fmt, ...) {
 	time_t now = time(NULL);
@@ -29,22 +33,43 @@ void logprint(char *fmt, ...) {
 	putchar('\n');
 }
 
-void send_str(int conn, char *str) {
+void send_str(int connfd, char *str) {
 	size_t len = strlen(str);
-	send(conn, str, len, 0);
+	send(connfd, str, len, 0);
 }
 
-void response_handler(int conn) {
+void response_handler(int connfd) {
 	char body[] = "hello world\r\n";
 
-	send_str(conn, "HTTP/1.1 200 OK\r\n\r\n");
-	send_str(conn, body);
+	send_str(connfd, "HTTP/1.1 200 OK\r\n\r\n");
+	send_str(connfd, body);
+}
+
+void cleanup(int signum) {
+	(void) signum; // Prevent compilation warning
+	close(sockfd);
+	close(connfd);
+	exit(EXIT_SUCCESS);
 }
 
 int main(void) {
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("socket() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	struct sigaction sa;
+	sa.sa_handler = cleanup;
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGINT, &sa, NULL) < 0) {
+		perror("sigaction() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	if (sigaction(SIGTERM, &sa, NULL) < 0) {
+		perror("sigaction() failed");
 		exit(EXIT_FAILURE);
 	}
 
@@ -53,12 +78,14 @@ int main(void) {
 	addr.sin_port = htons(LISTEN_PORT);
 	addr.sin_addr.s_addr = INADDR_ANY;
 
+	int reuseaddr_opt = 1;
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr_opt, sizeof(reuseaddr_opt));
+	// TODO: setsockopt SO_REUSEADDR or SO_REUSEPORT
+
 	if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		perror("bind() failed");
 		exit(EXIT_FAILURE);
 	}
-
-	// TODO: setsockopt SO_REUSEADDR or SO_REUSEPORT
 
 	if (listen(sockfd, LISTEN_BACKLOG) < 0) {
 		perror("listen() failed");
@@ -70,21 +97,20 @@ int main(void) {
 	char buffer[CLIENT_BUFFER_SIZE] = {0};
 
 	while (1) {
-		int conn;
 		struct sockaddr_in peer_addr;
 		socklen_t peer_addr_len = sizeof(peer_addr);
 
-		if ((conn = accept(sockfd, (struct sockaddr *) &peer_addr, &peer_addr_len)) < 0) {
+		if ((connfd = accept(sockfd, (struct sockaddr *) &peer_addr, &peer_addr_len)) < 0) {
 			perror("accept() failed");
 			continue;
 		}
 
 		logprint("accepted connection from %s", inet_ntoa(peer_addr.sin_addr));
 
-		if (recv(conn, buffer, sizeof(buffer), 0) < 0)
+		if (recv(connfd, buffer, sizeof(buffer), 0) < 0)
 			perror("recv() failed");
 
-		//response_handler(conn);
+		//response_handler(connfd);
 		struct mu_header headers[10];
 		struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
 
@@ -92,10 +118,10 @@ int main(void) {
 		for (size_t i = 0; i < req.headers_length; i++)
 			logprint("with header %s: %s", req.headers[i].field, req.headers[i].value);
 
-		close(conn);
+		close(connfd);
 	}
 
-	close(sockfd);
+	close(sockfd); // TODO: or should I call cleanup(-1)?
 
 	return 0;
 }
