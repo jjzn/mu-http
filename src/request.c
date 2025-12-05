@@ -48,6 +48,7 @@ struct mu_request _mu_parse_request_startline(char *startline) {
 	return req;
 }
 
+// Parse the request startline and headers
 struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers) {
 	struct mu_request req = mu_request_err;
 
