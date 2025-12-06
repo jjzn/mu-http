@@ -9,6 +9,11 @@ struct mu_header {
 	char *value;
 };
 
-ssize_t mu_parse_headers(char *raw, struct mu_header *headers, size_t max);
+static const struct mu_header mu_header_err = { .field = NULL, .value = NULL };
+
+#define mu_header_is_error(header) ((header).field == NULL && (header).value == NULL)
+#define mu_header_expect(header, other) (mu_header_is_error(header) ? (other) : (header))
+
+ssize_t mu_parse_headers(char *raw, char **body, struct mu_header *headers, size_t max);
 
 #endif

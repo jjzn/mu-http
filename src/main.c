@@ -55,7 +55,7 @@ void cleanup(int signum) {
 int main(void) {
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		perror("socket() failed");
+		perror("socket");
 		exit(EXIT_FAILURE);
 	}
 
@@ -64,12 +64,12 @@ int main(void) {
 	sigemptyset(&sa.sa_mask);
 
 	if (sigaction(SIGINT, &sa, NULL) < 0) {
-		perror("sigaction() failed");
+		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
 
 	if (sigaction(SIGTERM, &sa, NULL) < 0) {
-		perror("sigaction() failed");
+		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
 
@@ -83,12 +83,12 @@ int main(void) {
 	// TODO: setsockopt SO_REUSEADDR or SO_REUSEPORT
 
 	if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		perror("bind() failed");
+		perror("bind");
 		exit(EXIT_FAILURE);
 	}
 
 	if (listen(sockfd, LISTEN_BACKLOG) < 0) {
-		perror("listen() failed");
+		perror("listen");
 		exit(EXIT_FAILURE);
 	}
 
@@ -101,18 +101,28 @@ int main(void) {
 		socklen_t peer_addr_len = sizeof(peer_addr);
 
 		if ((connfd = accept(sockfd, (struct sockaddr *) &peer_addr, &peer_addr_len)) < 0) {
-			perror("accept() failed");
+			perror("accept");
 			continue;
 		}
 
 		logprint("accepted connection from %s", inet_ntoa(peer_addr.sin_addr));
 
-		if (recv(connfd, buffer, sizeof(buffer), 0) < 0)
-			perror("recv() failed");
+		ssize_t read = recv(connfd, buffer, sizeof(buffer), 0);
+		if (read < 0)
+			perror("recv");
 
 		//response_handler(connfd);
+		char *body;
 		struct mu_header headers[10];
-		struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
+		struct mu_request req = mu_parse_request(buffer, &body, headers, sizeof(headers) / sizeof(struct mu_header));
+
+		struct mu_header header_cl = mu_find_header(req, "Content-Length");
+		size_t content_length = 0;
+		if (!mu_header_is_error(header_cl))
+			content_length = atoi(header_cl.value); // Returns 0 on erorr, which is fine
+
+		logprint("content length is %d\n", content_length);
+		logprint("recv'ed body length is %d\n", strlen(body));
 
 		logprint("request is %s %s %s", mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
 		for (size_t i = 0; i < req.headers_length; i++)

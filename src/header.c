@@ -8,11 +8,13 @@
 // HTTP message, and may include (part of) the request body, separated by CRLF.
 //
 // Returns the number of field lines (headers) parsed, or -1 in case of error
-ssize_t mu_parse_headers(char *raw, struct mu_header *headers, size_t max) {
+ssize_t mu_parse_headers(char *raw, char **body, struct mu_header *headers, size_t max) {
 	// Separate request body from header section
-	char *end = strstr(raw, "\r\n\r\n");
-	end[2] = '\0';
-	end[3] = '\0';
+	*body = strstr(raw, "\r\n\r\n");
+	(*body)[2] = '\0';
+	(*body)[3] = '\0';
+
+	*body += 4; // Advance past double CRLF
 
 	// TODO: it may be more efficient to do manual parsing (no strtok)
 

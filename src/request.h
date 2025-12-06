@@ -41,6 +41,7 @@ static const struct mu_request mu_request_err = { .method = HTTP_method_unknown,
 	(req).headers_length == mu_request_err.headers_length && \
 	(req).headers == mu_request_err.headers)
 
-struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers);
+struct mu_request mu_parse_request(char *raw, char **body, struct mu_header *headers, size_t max_headers);
+struct mu_header mu_find_header(struct mu_request req, char *field);
 
 #endif

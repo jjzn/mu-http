@@ -49,7 +49,7 @@ struct mu_request _mu_parse_request_startline(char *startline) {
 }
 
 // Parse the request startline and headers
-struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers) {
+struct mu_request mu_parse_request(char *raw, char **body, struct mu_header *headers, size_t max_headers) {
 	struct mu_request req = mu_request_err;
 
 	char *lineend = strstr(raw, "\r\n"); // Where the start line ends
@@ -64,7 +64,7 @@ struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t 
 		return mu_request_err;
 	
 	// Parse headers
-	ssize_t headers_length = mu_parse_headers(lineend + 2, headers, max_headers);
+	ssize_t headers_length = mu_parse_headers(lineend + 2, body, headers, max_headers);
 	if (headers_length < 0)
 		return mu_request_err;
 
@@ -72,4 +72,13 @@ struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t 
 	req.headers = headers;
 
 	return req;
+}
+
+struct mu_header mu_find_header(struct mu_request req, char *field) {
+	for (size_t i = 0; i < req.headers_length; i++) {
+		if (strcmp(req.headers[i].field, field) == 0)
+			return req.headers[i];
+	}
+
+	return mu_header_err;
 }
