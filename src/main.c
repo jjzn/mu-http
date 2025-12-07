@@ -114,18 +114,16 @@ int main(void) {
 		}
 
 		//response_handler(connfd);
-		char *body;
-		int body_malloced = 0;
-
 		struct mu_header headers[10];
-		struct mu_request req = mu_parse_request(buffer, &body, headers, sizeof(headers) / sizeof(struct mu_header));
+		struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
 
 		struct mu_header header_cl = mu_find_header(req, "Content-Length");
-		size_t bodylen = strlen(body);
+		size_t bodylen = strlen(req.body);
 		size_t content_length = 0;
 		if (!mu_header_is_error(header_cl))
 			content_length = atoi(header_cl.value); // Returns 0 on erorr, which is fine
 
+		int body_malloced = 0;
 		if (content_length > bodylen) {
 			char *bodybuff = malloc(content_length);
 			if (bodybuff == NULL) {
@@ -134,7 +132,7 @@ int main(void) {
 			}
 
 			// Copy part of body already read into new buffer
-			memcpy(bodybuff, body, bodylen);
+			memcpy(bodybuff, req.body, bodylen);
 
 			// Try to read rest of request body into buffer
 			read = recv(connfd, bodybuff + bodylen, content_length - bodylen, 0);
@@ -146,14 +144,14 @@ int main(void) {
 			if ((size_t) read != content_length - bodylen) // We can cast `read` to size_t because `read` > 0
 				logprint("error: expected to receive %d octets, recv'ed %d octets", content_length - bodylen, read);
 
-			body = bodybuff; // Make the new body available as `body`
+			req.body = bodybuff; // Make the new body available as `body`
 			body_malloced = 1;
 		}
 
 		logprint("content length is %d", content_length);
-		logprint("recv'ed body length is %d", strlen(body));
+		logprint("recv'ed body length is %d", strlen(req.body));
 
-		logprint("%s", body);
+		logprint("%s", req.body);
 
 		logprint("request is %s %s %s", mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
 		for (size_t i = 0; i < req.headers_length; i++)
@@ -163,7 +161,7 @@ int main(void) {
 
 		// Free body buffer if needed
 		if (body_malloced)
-			free(body);
+			free(req.body);
 	}
 
 	close(sockfd); // TODO: or should I call cleanup(-1)?

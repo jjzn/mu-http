@@ -30,18 +30,21 @@ struct mu_request {
 
 	size_t headers_length;
 	struct mu_header *headers;
+
+	char *body;
 };
 
-static const struct mu_request mu_request_err = { .method = HTTP_method_unknown, .version = HTTP_version_unknown, .target = NULL, .headers_length = 0, .headers = 0 };
+static const struct mu_request mu_request_err = { .method = HTTP_method_unknown, .version = HTTP_version_unknown, .target = NULL, .headers_length = 0, .headers = NULL, .body = NULL };
 
 #define mu_request_is_error(req) ( \
 	(req).method == mu_request_err.method && \
 	(req).version == mu_request_err.version && \
 	(req).target == mu_request_err.target && \
 	(req).headers_length == mu_request_err.headers_length && \
-	(req).headers == mu_request_err.headers)
+	(req).headers == mu_request_err.headers && \
+	(req).body == mu_request_err.body)
 
-struct mu_request mu_parse_request(char *raw, char **body, struct mu_header *headers, size_t max_headers);
+struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers);
 struct mu_header mu_find_header(struct mu_request req, char *field);
 
 #endif
