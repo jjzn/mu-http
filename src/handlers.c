@@ -28,18 +28,18 @@ void handler_logreq(int connfd, struct mu_request req) {
 	if (!mu_header_is_error(header_cl))
 		content_length = atoi(header_cl.value);
 
-	logprint("content length is %d", content_length);
-	logprint("recv'ed body length is %d", strlen(req.body));
+	logprint("(fd: %d) content length is %d", connfd, content_length);
+	logprint("(fd: %d) recv'ed body length is %d", connfd, strlen(req.body));
 
-	logprint("request is %s %s %s", mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
+	logprint("(fd: %d) request is %s %s %s", connfd, mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
 	for (size_t i = 0; i < req.headers_length; i++)
-		logprint("with header %s: %s", req.headers[i].field, req.headers[i].value);
+		logprint("(fd: %d) with header %s: %s", connfd, req.headers[i].field, req.headers[i].value);
 }
 
 void handler_echo(int connfd, struct mu_request req) {
 	handler_logreq(connfd, req);
 
-	logprint("handler_echo()");
+	logprint("(fd: %d) handler_echo()", connfd);
 
 	send_str(connfd, "HTTP/1.1 200 OK\r\n\r\n");
 	send_str(connfd, req.body);

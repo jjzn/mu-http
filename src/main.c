@@ -35,7 +35,7 @@ void handle_connection() {
 		return;
 	}
 
-	logprint("accepted connection from %s", inet_ntoa(peer_addr.sin_addr));
+	logprint("(fd: %d) accepted connection from %s", connfd, inet_ntoa(peer_addr.sin_addr));
 
 	ssize_t read = recv(connfd, buffer, sizeof(buffer), 0);
 	if (read < 0) {
@@ -46,7 +46,7 @@ void handle_connection() {
 	struct mu_header headers[CLIENT_MAX_HEADERS];
 	struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
 	if (mu_request_is_error(req)) {
-		logprint("failed to parse request, sending status 400");
+		logprint("(fd: %d) failed to parse request, sending status 400", connfd);
 		send_status(connfd, 400);
 		return;
 	}
@@ -76,7 +76,7 @@ void handle_connection() {
 		}
 
 		if ((size_t) read != content_length - bodylen) // We can cast `read` to size_t because `read` > 0
-			logprint("error: expected to receive %d octets, recv'ed %d octets", content_length - bodylen, read);
+			logprint("(fd: %d) error: expected to receive %d octets, recv'ed %d octets", connfd, content_length - bodylen, read);
 
 		req.body = bodybuff; // Make the new body available as `body`
 		body_malloced = 1;
@@ -85,7 +85,7 @@ void handle_connection() {
 	handler_echo(connfd, req);
 
 	close(connfd);
-	logprint("connection closed");
+	logprint("(fd: %d) connection closed", connfd);
 
 	// Free body buffer if needed
 	if (body_malloced)
