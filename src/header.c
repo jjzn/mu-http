@@ -9,34 +9,53 @@
 //
 // Returns the number of field lines (headers) parsed, or -1 in case of error
 ssize_t mu_parse_headers(char *raw, char **body, struct mu_header *headers, size_t max) {
-	// Separate request body from header section
-	*body = strstr(raw, "\r\n\r\n");
-	(*body)[2] = '\0';
-	(*body)[3] = '\0';
-
-	*body += 4; // Advance past double CRLF
-
-	// TODO: it may be more efficient to do manual parsing (no strtok)
-
-	char *curr = strtok(raw, "\r\n");
+	char *curr = raw;
 	size_t idx = 0;
 
-	while (curr != NULL && idx < max) {
-		char *colon = strchr(curr, ':');
-		if (colon == NULL) // No colon found
+	while (*curr != '\0' && idx < max) {
+		char *field = curr;
+
+		while (*curr != '\0' && *curr != ':')
+			curr++;
+
+		if (*curr == '\0') // No colon found
 			return -1;
 
-		*colon = '\0'; // Seperate field and value
-
 		// Eliminate any optional white space (OWS) between field name and value
-		char *value = colon + 1;
+		*curr = '\0';
+		curr++;
+
+		char *value = curr;
 		while (isblank(*value))
 			value++;
 
-		headers[idx++] = (struct mu_header) { .field = curr, .value = value };
+		while (*curr != '\0' && *curr != '\n')
+			curr++;
 
-		curr = strtok(NULL, "\r\n");
+		// Accept either bare LF, or CRLF (the CR gets replaced)
+		if (*curr == '\n' && curr[-1] == '\r')
+			curr[-1] = '\0';
+
+		// Remove newline and advance past it
+		if (*curr == '\n') {
+			*curr = '\0';
+			curr++;
+		}
+
+		// Finish parsing once we encounter another CRLF or LF (or the string ends)
+		if (*curr == '\0') {
+			break;
+		} else if (*curr == '\r' && curr[1] == '\n') {
+			curr += 2;
+			break;
+		} else if (*curr == '\n') {
+			curr++;
+			break; // TODO: what if we have CRLF, CR??
+		}
+
+		headers[idx++] = (struct mu_header) { .field = field, .value = value };
 	}
 
+	*body = curr;
 	return idx;
 }
