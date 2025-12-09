@@ -120,7 +120,6 @@ int main(void) {
 
 	int reuseaddr_opt = 1;
 	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr_opt, sizeof(reuseaddr_opt));
-	// TODO: setsockopt SO_REUSEADDR or SO_REUSEPORT
 
 	if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		perror("bind");

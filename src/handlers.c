@@ -31,8 +31,6 @@ void handler_logreq(int connfd, struct mu_request req) {
 	logprint("content length is %d", content_length);
 	logprint("recv'ed body length is %d", strlen(req.body));
 
-	logprint("%s", req.body);
-
 	logprint("request is %s %s %s", mu_http_method_labels[req.method], mu_http_version_labels[req.version], req.target);
 	for (size_t i = 0; i < req.headers_length; i++)
 		logprint("with header %s: %s", req.headers[i].field, req.headers[i].value);

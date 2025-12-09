@@ -52,19 +52,21 @@ struct mu_request _mu_parse_request_startline(char *startline) {
 struct mu_request mu_parse_request(char *raw, struct mu_header *headers, size_t max_headers) {
 	struct mu_request req = mu_request_err;
 
-	char *lineend = strstr(raw, "\r\n"); // Where the start line ends
-	if (lineend == NULL)
+	char *lineend = strstr(raw, "\n"); // Where the start line ends
+	if (lineend == NULL || lineend == raw)
 		return mu_request_err;
 
-	lineend[0] = '\0';
-	lineend[1] = '\0';
+	// Replace LF, and CR if present
+	*lineend = '\0';
+	if (lineend[-1] == '\r')
+		lineend[-1] = '\0';
 
 	req = _mu_parse_request_startline(raw);
 	if (mu_request_is_error(req))
 		return mu_request_err;
 	
 	// Parse headers
-	ssize_t headers_length = mu_parse_headers(lineend + 2, &req.body, headers, max_headers);
+	ssize_t headers_length = mu_parse_headers(lineend + 1, &req.body, headers, max_headers);
 	if (headers_length < 0)
 		return mu_request_err;
 
