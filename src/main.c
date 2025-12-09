@@ -45,6 +45,11 @@ void handle_connection() {
 
 	struct mu_header headers[CLIENT_MAX_HEADERS];
 	struct mu_request req = mu_parse_request(buffer, headers, sizeof(headers) / sizeof(struct mu_header));
+	if (mu_request_is_error(req)) {
+		logprint("failed to parse request, sending status 400");
+		send_status(connfd, 400);
+		return;
+	}
 
 	struct mu_header header_cl = mu_find_header(req, "Content-Length");
 	size_t bodylen = strlen(req.body);
@@ -80,6 +85,7 @@ void handle_connection() {
 	handler_echo(connfd, req);
 
 	close(connfd);
+	logprint("connection closed");
 
 	// Free body buffer if needed
 	if (body_malloced)

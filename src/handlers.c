@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 
@@ -9,6 +10,14 @@
 void send_str(int connfd, char *str) {
 	size_t len = strlen(str);
 	send(connfd, str, len, 0);
+}
+
+void send_status(int connfd, unsigned short status) {
+	// We don't care about checking for valid status codes
+	char buff[18];
+	snprintf(buff, sizeof(buff) / sizeof(char), "HTTP/1.1 %hu \r\n", status);
+
+	send_str(connfd, buff);
 }
 
 void handler_logreq(int connfd, struct mu_request req) {
