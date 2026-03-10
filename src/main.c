@@ -94,7 +94,7 @@ void handle_connection() {
         body_malloced = 1;
     }
 
-    handler_echo(connfd, req);
+    config__handle(connfd, req);
 
     close(connfd);
     logprint("(fd: %d) connection closed", connfd);

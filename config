@@ -1,0 +1,4 @@
+begin
+    prefix(/files, file)
+    exact(/echo, logreq, echo)
+end
