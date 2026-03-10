@@ -26,6 +26,9 @@ void handler_echo(int connfd, struct mu_request req);
  * Sends the file specified by the request target, relative to the specified
  * root. '.' and '..' are interpreted accordingly, while ensuring no files
  * outside of root are sent (no directory traversal).
+ *
+ * root: the root directory from which paths are interpreted. Must be a prefix
+ * of the request target, and begin with a slash
  */
 void handler_file(int connfd, struct mu_request req, char *root);
 

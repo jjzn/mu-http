@@ -45,13 +45,25 @@ void handler_echo(int connfd, struct mu_request req) {
 }
 
 void handler_file(int connfd, struct mu_request req, char *root) {
+    // root should be a prefix of req.target
+    char *relative_target = req.target;
+    char *root_tmp = root;
+    while (*root_tmp != '\0') {
+        if (*root_tmp != *relative_target) {
+            send_status(connfd, 400);
+            return;
+        }
+
+        relative_target++;
+        root_tmp++;
+    }
+
     // Strip leading / from target, to prevent opening absolute paths
     // See path_resolution(7) for the definition of "absolute path"
-    char *relative_target = req.target;
     while (*relative_target == '/')
         relative_target++;
 
-    int rootdir = open(root, O_RDONLY | O_DIRECTORY);
+    int rootdir = open(root + 1, O_RDONLY | O_DIRECTORY); // Skip leading / of root
     if (rootdir < 0) {
         perror("open");
         send_status(connfd, 500);
@@ -60,7 +72,7 @@ void handler_file(int connfd, struct mu_request req, char *root) {
 
     // openat ignores rootdir if the path is absolute, which is why we have
     // stripped leading / from the target
-    int fd = openat(rootdir, relative_target, O_RDONLY | O_NOFOLLOW);
+    int fd = openat(rootdir, relative_target, O_RDONLY | O_NOFOLLOW); // FIXME: vulnerable to path traversals!!!!!!!
     if (fd < 0) {
         perror("openat");
         close(rootdir);
@@ -79,9 +91,13 @@ void handler_file(int connfd, struct mu_request req, char *root) {
         return;
     }
 
+    send_status(connfd, 200);
+
     char content_length[18+20+1]; // 18 chars for header name and CRLF, at most 20 chars for st_size (64 bits), 1 null terminator
     snprintf(content_length, sizeof(content_length) / sizeof(char), "Content-Length: %ld\r\n", st.st_size);
     send_str(connfd, content_length);
+
+    write(connfd, "\r\n", 2); // End of headers
 
     char buf[1024];
     ssize_t n;

@@ -46,6 +46,7 @@ void handle_connection() {
         return;
     }
 
+    puts("");
     logprint("(fd: %d) accepted connection from %s", connfd, inet_ntoa(peer_addr.sin_addr));
 
     ssize_t read = recv(connfd, buffer, sizeof(buffer), 0);
