@@ -5,8 +5,8 @@
 #include <sys/types.h>
 
 struct mu_header {
-	char *field;
-	char *value;
+    char *field;
+    char *value;
 };
 
 static const struct mu_header mu_header_err = { .field = NULL, .value = NULL };

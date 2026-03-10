@@ -5,18 +5,18 @@
 #include "utils.h"
 
 void logprint(char *fmt, ...) {
-	time_t now = time(NULL);
-	struct tm *time = localtime(&now);
-	va_list args;
+    time_t now = time(NULL);
+    struct tm *time = localtime(&now);
+    va_list args;
 
-	char timefmt[26]; // yyyy-mm-dd hh:mm:ss +hhmm
-	strftime(timefmt, sizeof(timefmt) / sizeof(char), "%F %T %z", time);
+    char timefmt[26]; // yyyy-mm-dd hh:mm:ss +hhmm
+    strftime(timefmt, sizeof(timefmt) / sizeof(char), "%F %T %z", time);
 
-	printf("[%s] ", timefmt);
+    printf("[%s] ", timefmt);
 
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
 
-	putchar('\n');
+    putchar('\n');
 }
