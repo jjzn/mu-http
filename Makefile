@@ -1,4 +1,5 @@
 CFLAGS = -Wall -Wextra -Werror -std=c99 -Wpedantic -D_POSIX_C_SOURCE=200809L
+LDFLAGS = -lmagic
 
 TARGET = mu-http
 

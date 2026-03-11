@@ -4,13 +4,14 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <magic.h>
 
 #include "request.h"
 #include "header.h"
 #include "utils.h"
 #include "handlers.h"
 
-void send_str(int connfd, char *str) {
+void send_str(int connfd, const char *str) {
     size_t len = strlen(str);
     send(connfd, str, len, 0);
 }
@@ -80,8 +81,6 @@ void handler_file(int connfd, struct mu_request req, char *root) {
         return;
     }
 
-    // TODO: send Content-Type
-
     struct stat st;
     if (fstat(fd, &st) < 0 && st.st_size < 0) {
         perror("fstat");
@@ -92,6 +91,19 @@ void handler_file(int connfd, struct mu_request req, char *root) {
     }
 
     send_status(connfd, 200);
+
+    magic_t cookie = magic_open(MAGIC_MIME_TYPE);
+    magic_load(cookie, NULL);
+
+    if (cookie != NULL) {
+        const char *content_type = magic_descriptor(cookie, fd);
+
+        if (content_type != NULL) {
+            send_str(connfd, "Content-Type: ");
+            send_str(connfd, content_type);
+            send_str(connfd, "\r\n");
+        }
+    }
 
     char content_length[18+20+1]; // 18 chars for header name and CRLF, at most 20 chars for st_size (64 bits), 1 null terminator
     snprintf(content_length, sizeof(content_length) / sizeof(char), "Content-Length: %ld\r\n", st.st_size);
