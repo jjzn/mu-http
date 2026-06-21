@@ -63,18 +63,24 @@ void handle_connection() {
         return;
     }
 
-    // TODO: check against CLIENT_MAX_BODY_LENGTH
     struct mu_header header_cl = mu_find_header(req, "Content-Length");
     size_t bodylen = strlen(req.body);
     size_t content_length = 0;
     if (!mu_header_is_error(header_cl))
         content_length = atoi(header_cl.value); // Returns 0 on erorr, which is fine
 
+    if (content_length > CLIENT_MAX_BODY_LENGTH) {
+        logprint("(fd: %d) error: content length (%d octets) exceeds max length", connfd, content_length);
+        send_status(connfd, 400);
+        return;
+    }
+
     int body_malloced = 0;
     if (content_length > bodylen) {
         char *bodybuff = malloc(content_length);
         if (bodybuff == NULL) {
             perror("malloc");
+            send_status(connfd, 500);
             return;
         }
 
@@ -85,6 +91,7 @@ void handle_connection() {
         read = recv(connfd, bodybuff + bodylen, content_length - bodylen, 0);
         if (read < 0) {
             perror("recv");
+            send_status(connfd, 500);
             return;
         }
 
@@ -95,7 +102,7 @@ void handle_connection() {
         body_malloced = 1;
     }
 
-    config__handle(connfd, req);
+    config__handle(connfd, req); // Hook into user-defined server config
 
     close(connfd);
     logprint("(fd: %d) connection closed", connfd);
