@@ -1,3 +1,5 @@
+#include <asm-generic/errno-base.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,8 +43,31 @@ void handler_logreq(int connfd, struct mu_request req) {
 }
 
 void handler_echo(int connfd, struct mu_request req) {
-    send_str(connfd, "HTTP/1.1 200 OK\r\n\r\n");
+    send_status(connfd, 200);
+
+    char content_length[18+20+1]; // 18 chars for header name and CRLF, at most 20 chars for st_size (64 bits), 1 null terminator
+    snprintf(content_length, sizeof(content_length) / sizeof(char), "Content-Length: %ld\r\n", strlen(req.body));
+    send_str(connfd, content_length);
+
+    write(connfd, "\r\n", 2); // End of headers
     send_str(connfd, req.body);
+}
+
+int errno_to_status(int error) {
+    switch (error) {
+        case EINVAL:
+        case ENAMETOOLONG:
+        case ENOTDIR:
+            return 400;
+            break;
+
+        case ENOENT:
+            return 404;
+            break;
+
+        default:
+            return 500;
+    }
 }
 
 void handler_file(int connfd, struct mu_request req, char *root) {
@@ -67,7 +92,8 @@ void handler_file(int connfd, struct mu_request req, char *root) {
     int rootdir = open(root + 1, O_RDONLY | O_DIRECTORY); // Skip leading / of root
     if (rootdir < 0) {
         perror("open");
-        send_status(connfd, 500);
+        logprint("error while serving %s from %s", relative_target, root);
+        send_status(connfd, errno_to_status(errno));
         return;
     }
 
@@ -76,12 +102,14 @@ void handler_file(int connfd, struct mu_request req, char *root) {
     int fd = openat(rootdir, relative_target, O_RDONLY | O_NOFOLLOW); // FIXME: vulnerable to path traversals!!!!!!!
     if (fd < 0) {
         perror("openat");
+        logprint("error while serving %s from %s", relative_target, root);
         close(rootdir);
-        send_status(connfd, 500);
+        send_status(connfd, errno_to_status(errno));
         return;
     }
 
     struct stat st;
+    // No error checks needed for fstat
     if (fstat(fd, &st) < 0 && st.st_size < 0) {
         perror("fstat");
         close(fd);
