@@ -63,6 +63,12 @@ void handle_connection() {
         return;
     }
 
+    if (req.version != HTTP_1_1) { // TODO: support for HTTP/2 and HTTP/3
+        logprint("(fd: %d) illegal HTTP version, sending status 400", connfd);
+        send_status(connfd, 400);
+        return;
+    }
+
     struct mu_header header_cl = mu_find_header(req, "Content-Length");
     size_t bodylen = strlen(req.body);
     size_t content_length = 0;
@@ -102,6 +108,7 @@ void handle_connection() {
         body_malloced = 1;
     }
 
+    // TODO: filter based on request method
     config__handle(connfd, req); // Hook into user-defined server config
 
     close(connfd);

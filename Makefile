@@ -2,11 +2,12 @@ CFLAGS = -Wall -Wextra -Werror -std=c99 -Wpedantic -D_POSIX_C_SOURCE=200809L
 LDFLAGS = -lmagic
 
 TARGET = mu-http
+PREFIX = ~/.local/bin/
 
 SRCS = $(wildcard src/*.c) src/config.c
 OBJS = $(patsubst src/%.c,build/%.o,$(SRCS))
 
-.PHONY = all clean remake
+.PHONY = all clean remake debug install
 
 all: build $(TARGET)
 
@@ -29,3 +30,6 @@ remake: clean all
 
 debug: CFLAGS += -g3 -DDEBUG
 debug: remake
+
+install: $(TARGET)
+	install $(TARGET) $(PREFIX)
